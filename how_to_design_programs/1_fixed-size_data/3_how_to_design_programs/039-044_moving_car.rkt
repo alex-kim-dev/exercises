@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname 3_moving_car) (read-case-sensitive #t) (teachpacks ((lib "batch-io.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "batch-io.rkt" "teachpack" "2htdp")) #f)))
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname 039-044_moving_car) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/universe)
 (require 2htdp/image)
 
@@ -23,24 +23,24 @@
 (define WHEEL-DISTANCE (* WHEEL-RADIUS 2))
 (define STEP WHEEL-DISTANCE)
 (define CAR
-  (underlay/xy
-   (polygon
-    (list (make-posn STEP 0)
-          (make-posn (* 3 STEP) 0)
-          (make-posn (* 4 STEP) STEP)
-          (make-posn (* 5 STEP) STEP)
-          (make-posn (* 5 STEP) (* 2 STEP))
-          (make-posn 0 (* 2 STEP))
-          (make-posn 0 STEP))
-    "solid" "red")
-   WHEEL-RADIUS (* 3 WHEEL-RADIUS)
-   (underlay/xy
-    (circle WHEEL-RADIUS "solid" "black")
-    (* 3 STEP) 0
-    (circle WHEEL-RADIUS "solid" "black"))))
+  (underlay/xy (polygon (list (make-posn STEP 0)
+                              (make-posn (* 3 STEP) 0)
+                              (make-posn (* 4 STEP) STEP)
+                              (make-posn (* 5 STEP) STEP)
+                              (make-posn (* 5 STEP) (* 2 STEP))
+                              (make-posn 0 (* 2 STEP))
+                              (make-posn 0 STEP))
+                        "solid"
+                        "red")
+               WHEEL-RADIUS
+               (* 3 WHEEL-RADIUS)
+               (underlay/xy (circle WHEEL-RADIUS "solid" "black")
+                            (* 3 STEP)
+                            0
+                            (circle WHEEL-RADIUS "solid" "black"))))
 
 ; An AnimationState is a Number.
-; interpretation: the number of clock ticks 
+; interpretation: the number of clock ticks
 ; since the animation started
 
 ; TODO
@@ -54,14 +54,14 @@
 ; places the image of the car PX-PER-TICK pixels from the left
 ; margin of the SCENE + car width every tick
 (define (render n)
-  (place-image/align
-   CAR (* PX-PER-TICK n) SCENE-HEIGHT "right" "bottom" SCENE))
+  (place-image/align CAR (* PX-PER-TICK n) SCENE-HEIGHT "right" "bottom" SCENE))
 
 ; AnimationState -> AnimationState
 ; increments the clock
 (check-expect (tock 20) 21)
 (check-expect (tock 78) 79)
-(define (tock n) (+ n 1))
+(define (tock n)
+  (+ n 1))
 
 ; AnimationState Number Number String -> AnimationState
 ; places the car at x-mouse
@@ -78,15 +78,11 @@
 ; stops the program after the car has disappeared on the right
 (check-expect (end? 0) #false)
 (check-expect (end? 10) #false)
-(check-expect
- (end? (+ 1 (quotient SCENE-WIDTH PX-PER-TICK))) #true)
-(define (end? n) (> (* PX-PER-TICK n) SCENE-WIDTH))
+(check-expect (end? (+ 1 (quotient SCENE-WIDTH PX-PER-TICK))) #true)
+(define (end? n)
+  (> (* PX-PER-TICK n) SCENE-WIDTH))
 
 (define (main state)
-  (big-bang state
-    [on-tick tock]
-    [on-mouse hyper]
-    [to-draw render]
-    [stop-when end?]))
+  (big-bang state [on-tick tock] [on-mouse hyper] [to-draw render] [stop-when end?]))
 
 (main 0)

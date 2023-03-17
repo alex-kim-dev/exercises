@@ -1,16 +1,16 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname |058|) (read-case-sensitive #t) (teachpacks ((lib "batch-io.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "batch-io.rkt" "teachpack" "2htdp")) #f)))
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname 058-062) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/universe)
 (require 2htdp/image)
 
 ; 58 Introduce constants that separate the intervals for prices
 
-; A Price falls into one of three intervals: 
+; A Price falls into one of three intervals:
 ; — 0 through 1000
 ; — 1000 through 10000
 ; — 10000 and above.
-; interpretation the price of an item  
+; interpretation the price of an item
 
 (define taxBoundary1 1000)
 (define taxBoundary2 10000)
@@ -31,8 +31,6 @@
     [(and (<= 0 p) (< p taxBoundary1)) tax1]
     [(and (<= taxBoundary1 p) (< p taxBoundary2)) (* tax2 p)]
     [(>= p taxBoundary2) (* tax3 p)]))
-
-
 
 ; 59 Finish the design of traffic light sim
 ; 60 Add an alternative tl-next based on numbers, test
@@ -72,7 +70,8 @@
 (check-expect (tl-next-numeric 1) 2)
 (check-expect (tl-next-numeric 2) 0)
 (check-expect (tl-next-numeric 6) 1)
-(define (tl-next-numeric state) (modulo (+ state 1) 3))
+(define (tl-next-numeric state)
+  (modulo (+ state 1) 3))
 
 ; S-TrafficLight -> S-TrafficLight
 ; yields the next state, given current state cs
@@ -88,28 +87,18 @@
 ; TrafficLight -> Image
 ; renders the current state cs as an image
 (define (tl-render state)
-  (place-images
-   (list (circle 10 (if (string=? state "red")
-                        "solid" "outline") "red")
-         (circle 10 (if (string=? state "yellow")
-                        "solid" "outline") "yellow")
-         (circle 10 (if (string=? state "green")
-                        "solid" "outline") "green"))
-   (list (make-posn 15 15)
-         (make-posn 45 15)
-         (make-posn 75 15))
-   (empty-scene 90 30)))
+  (place-images (list (circle 10 (if (string=? state "red") "solid" "outline") "red")
+                      (circle 10 (if (string=? state "yellow") "solid" "outline") "yellow")
+                      (circle 10 (if (string=? state "green") "solid" "outline") "green"))
+                (list (make-posn 15 15) (make-posn 45 15) (make-posn 75 15))
+                (empty-scene 90 30)))
 
 ; TrafficLight -> TrafficLight
 ; simulates a clock-based American traffic light
 (define (traffic-light-sim initial-state)
-  (big-bang initial-state
-    [to-draw tl-render]
-    [on-tick tl-next 1]))
+  (big-bang initial-state [to-draw tl-render] [on-tick tl-next 1]))
 
 (traffic-light-sim "green")
-
-
 
 ; 62 Door sim
 
@@ -147,27 +136,20 @@
 (check-expect (door-action CLOSED "a") CLOSED)
 (define (door-action state key)
   (cond
-    [(and (string=? LOCKED state) (string=? "u" key))
-     CLOSED]
-    [(and (string=? CLOSED state) (string=? "l" key))
-     LOCKED]
-    [(and (string=? CLOSED state) (string=? " " key))
-     OPEN]
+    [(and (string=? LOCKED state) (string=? "u" key)) CLOSED]
+    [(and (string=? CLOSED state) (string=? "l" key)) LOCKED]
+    [(and (string=? CLOSED state) (string=? " " key)) OPEN]
     [else state]))
 
 ; DoorState -> Image
 ; translates the state into a large text image
-(check-expect (door-render CLOSED)
-              (text CLOSED 40 "red"))
+(check-expect (door-render CLOSED) (text CLOSED 40 "red"))
 (define (door-render state)
   (text state 40 "red"))
 
 ; DoorState -> DoorState
 ; simulates a door with an automatic door closer
 (define (door-sim initial-state)
-  (big-bang initial-state
-    [on-tick door-close 3]
-    [on-key door-action]
-    [to-draw door-render]))
+  (big-bang initial-state [on-tick door-close 3] [on-key door-action] [to-draw door-render]))
 
 (door-sim LOCKED)

@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname 3_how_to_desing_programs) (read-case-sensitive #t) (teachpacks ((lib "batch-io.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "batch-io.rkt" "teachpack" "2htdp")) #f)))
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname 033-038) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/batch-io)
 (require 2htdp/universe)
 (require 2htdp/image)
@@ -11,7 +11,8 @@
 ; String -> String (Char)
 ; returns the 1st character of a non-empty string
 ; given: "hello", expect: "h"
-(define (string-first str) (substring str 0 1))
+(define (string-first str)
+  (substring str 0 1))
 (string-first "hello")
 
 ; 35 Design the function string-last
@@ -37,8 +38,7 @@
 ; given: "h", expect: ""
 ; given: "", expect: ""
 (define (string-rest str)
-  (if (= (string-length str) 0)
-      "" (substring str 1 (string-length str))))
+  (if (= (string-length str) 0) "" (substring str 1 (string-length str))))
 (string-rest "hello")
 (string-rest "h")
 (string-rest "")
@@ -50,10 +50,7 @@
 ; given: "h", expect: ""
 ; given: "", expect: ""
 (define (string-remove-last str)
-  (if (= (string-length str) 0)
-      "" (substring str
-                    (- (string-length str) 1)
-                    (string-length str))))
+  (if (= (string-length str) 0) "" (substring str (- (string-length str) 1) (string-length str))))
 (string-remove-last "hello")
 (string-remove-last "h")
 (string-remove-last "")
