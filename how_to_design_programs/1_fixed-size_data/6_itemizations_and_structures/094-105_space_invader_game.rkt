@@ -48,47 +48,42 @@
 ; and the tank's speed: dx pixels/tick
 (define-struct tank [x vel])
 
-(define-struct aim [ufo tank])
-(define-struct fired [ufo tank missile])
+; MissileOrNot is one of: #false, Posn
+; #false means the missile is not fired yet, Posn - location of the fired one
 
-; State is one of:
-; – (make-aim UFO Tank)
-; – (make-fired UFO Tank Missile)
-; represents the complete state of a space invader game
+; SiState: (make-sistate UFO Tank MissileOrNot)
+; represents the complete state of a space invader game (v2)
+(define-struct sistate [ufo tank missile])
 
 ; SELECTORS ===========================================
 
 ; State -> Number, returns tank's x location
 (define (get-tank-x state)
-  (cond
-    [(aim? state) (tank-x (aim-tank state))]
-    [(fired? state) (tank-x (fired-tank state))]))
+  (tank-x (sistate-tank state)))
 
 ; State -> Number, returns tank's velocity
 (define (get-tank-vel state)
-  (cond
-    [(aim? state) (tank-vel (aim-tank state))]
-    [(fired? state) (tank-vel (fired-tank state))]))
+  (tank-vel (sistate-tank state)))
 
 ; State -> Number, returns ufo's x coordinate
 (define (get-ufo-x state)
-  (cond
-    [(aim? state) (posn-x (aim-ufo state))]
-    [(fired? state) (posn-x (fired-ufo state))]))
+  (posn-x (sistate-ufo state)))
 
 ; State -> Number, returns ufo's y coordinate
 (define (get-ufo-y state)
-  (cond
-    [(aim? state) (posn-y (aim-ufo state))]
-    [(fired? state) (posn-y (fired-ufo state))]))
+  (posn-y (sistate-ufo state)))
 
 ; State -> Number, returns missile's x coordinate
 (define (get-missile-x state)
-  (posn-x (fired-missile state)))
+  (posn-x (sistate-missile state)))
 
 ; State -> Number, returns missile's y coordinate
 (define (get-missile-y state)
-  (posn-y (fired-missile state)))
+  (posn-y (sistate-missile state)))
+
+; State -> Boolean, indicates if the missile was fired or not
+(define (aim? state)
+  (boolean? (sistate-missile state)))
 
 ; RENDERING ===========================================
 
@@ -97,10 +92,12 @@
 (define (tank-render tank img)
   (place-image TANK (tank-x tank) (- (image-height img) (/ TANK-H 2)) img))
 
-; Missile Image -> Image
-; adds missile to the given image
+; MissileOrNot Image -> Image
+; adds missile to the given image if it's launched
 (define (missile-render missile img)
-  (place-image MISSILE (posn-x missile) (posn-y missile) img))
+  (cond
+    [(boolean? missile) img]
+    [(posn? missile) (place-image MISSILE (posn-x missile) (posn-y missile) img)]))
 
 ; UFO Image -> Image
 ; adds ufo to the given image
@@ -110,11 +107,8 @@
 ; State -> Image
 ; draws TANK, UFO, and possibly MISSILE on the SCENE
 (define (si-render state)
-  (cond
-    [(aim? state) (ufo-render (aim-ufo state) (tank-render (aim-tank state) SCENE))]
-    [(fired? state)
-     (ufo-render (fired-ufo state)
-                 (tank-render (fired-tank state) (missile-render (fired-missile state) SCENE)))]))
+  (ufo-render (sistate-ufo state)
+              (tank-render (sistate-tank state) (missile-render (sistate-missile state) SCENE))))
 
 ; State -> Image
 ; draws a final scene wth
@@ -139,45 +133,40 @@
 ; State -> State
 ; updates the position of objects in the game on every tick
 (define (si-move state)
-  (cond
-    [(aim? state)
-     (make-aim (make-posn (clamp (+ (get-ufo-x state) (rand -5 5)) UFO-XR)
-                          (clamp (+ (get-ufo-y state) 1) UFO-YR))
-               (make-tank (clamp (+ (get-tank-x state) (get-tank-vel state)) TANK-R)
-                          (get-tank-vel state)))]
-    [(fired? state)
-     (make-fired (make-posn (clamp (+ (get-ufo-x state) (rand -5 5)) UFO-XR)
-                            (clamp (+ (get-ufo-y state) 1) UFO-YR))
-                 (make-tank (get-tank-x state) (get-tank-vel state))
-                 (make-posn (get-missile-x state) (- (get-missile-y state) MISSILE-VEL)))]))
+  (make-sistate
+   (make-posn (clamp (+ (get-ufo-x state) (rand -5 5)) UFO-XR) (clamp (+ (get-ufo-y state) 1) UFO-YR))
+   (make-tank (clamp (+ (get-tank-x state) (get-tank-vel state)) TANK-R) (get-tank-vel state))
+   (if (aim? state) #false (make-posn (get-missile-x state) (- (get-missile-y state) MISSILE-VEL)))))
 
 ; State KeyEvent -> State
 ; controls the tank's movement direction and fires a missile on key press
 (define (si-control state key-event)
   (cond
     [(and (key=? key-event " ") (aim? state))
-     (make-fired (make-posn (get-ufo-x state) (get-ufo-y state))
-                 (make-tank (get-tank-x state) (get-tank-vel state))
-                 (make-posn (get-tank-x state) (- SCENE-H TANK-H (/ MISSILE-SIZE 2))))]
-    [(and (aim? state) (or (key=? key-event "left") (key=? key-event "right")))
-     (make-aim (make-posn (get-ufo-x state) (get-ufo-y state))
-               (make-tank (get-tank-x state)
-                          (* (cond
-                               [(key=? key-event "left") -1]
-                               [(key=? key-event "right") 1])
-                             (abs (get-tank-vel state)))))]
+     (make-sistate (make-posn (get-ufo-x state) (get-ufo-y state))
+                   (make-tank (get-tank-x state) (get-tank-vel state))
+                   (make-posn (get-tank-x state) (- SCENE-H TANK-H (/ MISSILE-SIZE 2))))]
+    [(or (key=? key-event "left") (key=? key-event "right"))
+     (make-sistate (make-posn (get-ufo-x state) (get-ufo-y state))
+                   (make-tank (get-tank-x state)
+                              (* (cond
+                                   [(key=? key-event "left") -1]
+                                   [(key=? key-event "right") 1])
+                                 (abs (get-tank-vel state))))
+                   (sistate-missile state))]
     [else state]))
 
 ; State -> Boolean
 ; stops the game if the ufo has landed
 (define (si-game-over? state)
   (or (>= (get-ufo-y state) (rng-max UFO-YR))
-      (and (fired? state)
+      (and (not (aim? state))
            (< (abs (- (get-missile-x state) (get-ufo-x state))) (/ UFO-W 2))
            (< (abs (- (get-missile-y state) (get-ufo-y state))) (/ UFO-H 2)))))
 
 ; MAIN ================================================
 
+; State -> State
 (define (run-si state)
   (big-bang state
             [to-draw si-render]
@@ -185,4 +174,4 @@
             [on-key si-control]
             [stop-when si-game-over? si-render-final]))
 
-(run-si (make-aim (make-posn (/ SCENE-W 2) (rng-min UFO-YR)) (make-tank 30 2)))
+(run-si (make-sistate (make-posn (/ SCENE-W 2) (rng-min UFO-YR)) (make-tank 30 2) #false))
