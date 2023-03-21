@@ -4,57 +4,49 @@
 (require 2htdp/universe)
 (require 2htdp/image)
 
-(define GO 0)
-(define HURRY 1)
-(define STOP 2)
 (define GO-TIME 10)
 (define HURRY-TIME 10)
 (define CROSS-TIME (+ GO-TIME HURRY-TIME))
 (define TL-RED (bitmap "../pedestrian_traffic_light_red.png"))
 (define TL-GREEN (bitmap "../pedestrian_traffic_light_green.png"))
 
-; Mode is one of:
-; - GO: pedestrians are allowed to cross a road
-; - HURRY: the time to cross a road is ending
-; - STOP: pedestrians should not cross a road
+; CrossTime: Number
+; represents time left for pedestrians to cross a road
 
-; Clock is a Number, the internal traffic light clock, which is used to change the state
+; CrossTime -> Image
+; draws the traffic light
+(define (render time)
+  (place-image
+   (cond
+     [(>= time HURRY-TIME) TL-GREEN]
+     [(>= time 0)
+      (overlay (text (number->string time) 44 (if (odd? time) "orange" "green")) TL-GREEN)]
+     [(< time 0) TL-RED])
+   28
+   28
+   (empty-scene 56 56)))
 
-; State is (make-state Mode Clock)
-; represents the complete state of a traffic light
-(define-struct tlstate [mode clock])
+; CrossTime -> CrossTime
+; decrements the time
+(check-expect (tock 10) 9)
+(check-expect (tock -1) -1)
+(check-expect (tock -2) -1)
+(define (tock time)
+  (max (- time 1) -1))
 
-; State -> Image, draws the traffic light
-(define (render state)
-  (place-image (cond
-                 [(= (tlstate-mode state) GO) TL-GREEN]
-                 [(= (tlstate-mode state) HURRY)
-                  (overlay (text (number->string (tlstate-clock state))
-                                 44
-                                 (if (odd? (tlstate-clock state)) "orange" "green"))
-                           TL-GREEN)]
-                 [(= (tlstate-mode state) STOP) TL-RED])
-               28
-               28
-               (empty-scene 56 56)))
-
-; State -> State, decrements the clock and changes the mode over time
-(define (tock state)
+; CrossTime KeyEvent -> CrossTime
+; starts the countdown of the time to cross a road on spacebar press
+(check-expect (handleKey -1 " ") CROSS-TIME)
+(check-expect (handleKey -1 "a") -1)
+(check-expect (handleKey CROSS-TIME " ") CROSS-TIME)
+(check-expect (handleKey 13 " ") 13)
+(define (handleKey time key-event)
   (cond
-    [(= (tlstate-mode state) GO)
-     (make-tlstate (if (<= (tlstate-clock state) HURRY-TIME) HURRY GO) (- (tlstate-clock state) 1))]
-    [(= (tlstate-mode state) HURRY)
-     (make-tlstate (if (<= (tlstate-clock state) 0) STOP HURRY) (- (tlstate-clock state) 1))]
-    [else state]))
+    [(and (key=? key-event " ") (< time 0)) CROSS-TIME]
+    [else time]))
 
-; State KeyEvent -> State, switches the mode to GO on spacebar press
-(define (handleKey state key-event)
-  (cond
-    [(and (key=? key-event " ") (= (tlstate-mode state) STOP)) (make-tlstate GO CROSS-TIME)]
-    [else state]))
+; CrossTime -> CrossTime
+(define (main initialTime)
+  (big-bang initialTime [to-draw render] [on-tick tock 0.5] [on-key handleKey]))
 
-; Mode -> State
-(define (main intialMode)
-  (big-bang (make-tlstate intialMode 0) [to-draw render] [on-tick tock 0.5] [on-key handleKey]))
-
-(main STOP)
+(main -1)
