@@ -40,9 +40,6 @@
 ; UFO: Posn
 ; UFO's location (the top-down, left-to-right convention)
 
-; Missile: Posn
-; missile's location
-
 ; Tank: (make-tank Number Number)
 ; (make-tank x dx) specifies the position (x, HEIGHT)
 ; and the tank's speed: dx pixels/tick
@@ -51,37 +48,55 @@
 ; MissileOrNot is one of: #false, Posn
 ; #false means the missile is not fired yet, Posn - location of the fired one
 
+; Any -> Boolean
+; is a an element of the MissileOrNot collection
+(define (missile-or-not? arg)
+  (cond
+    [(or (false? arg) (posn? arg)) #true]
+    [else #false]))
+
 ; SiState: (make-sistate UFO Tank MissileOrNot)
 ; represents the complete state of a space invader game (v2)
 (define-struct sistate [ufo tank missile])
 
+; Any -> Boolean
+; checks is the passed arg is of type SiState
+(define (deep-si-state? arg)
+  (cond
+    [(and (sistate? arg)
+          (posn? (sistate-ufo arg))
+          (tank? (sistate-tank arg))
+          (missile-or-not? (sistate-missile arg)))
+     #true]
+    [else #false]))
+
 ; SELECTORS ===========================================
 
-; State -> Number, returns tank's x location
+; SiState -> Number, returns tank's x location
 (define (get-tank-x state)
   (tank-x (sistate-tank state)))
 
-; State -> Number, returns tank's velocity
+; SiState -> Number, returns tank's velocity
 (define (get-tank-vel state)
   (tank-vel (sistate-tank state)))
 
-; State -> Number, returns ufo's x coordinate
+; SiState -> Number, returns ufo's x coordinate
 (define (get-ufo-x state)
   (posn-x (sistate-ufo state)))
 
-; State -> Number, returns ufo's y coordinate
+; SiState -> Number, returns ufo's y coordinate
 (define (get-ufo-y state)
   (posn-y (sistate-ufo state)))
 
-; State -> Number, returns missile's x coordinate
+; SiState -> Number, returns missile's x coordinate
 (define (get-missile-x state)
   (posn-x (sistate-missile state)))
 
-; State -> Number, returns missile's y coordinate
+; SiState -> Number, returns missile's y coordinate
 (define (get-missile-y state)
   (posn-y (sistate-missile state)))
 
-; State -> Boolean, indicates if the missile was fired or not
+; SiState -> Boolean, indicates if the missile was fired or not
 (define (aim? state)
   (boolean? (sistate-missile state)))
 
@@ -104,13 +119,13 @@
 (define (ufo-render ufo img)
   (place-image UFO (posn-x ufo) (posn-y ufo) img))
 
-; State -> Image
+; SiState -> Image
 ; draws TANK, UFO, and possibly MISSILE on the SCENE
 (define (si-render state)
   (ufo-render (sistate-ufo state)
               (tank-render (sistate-tank state) (missile-render (sistate-missile state) SCENE))))
 
-; State -> Image
+; SiState -> Image
 ; draws a final scene wth
 (define (si-render-final state)
   (overlay (cond
@@ -130,7 +145,7 @@
 (define (clamp n range)
   (min (rng-max range) (max (rng-min range) n)))
 
-; State -> State
+; SiState -> SiState
 ; updates the position of objects in the game on every tick
 (define (si-move state)
   (make-sistate
@@ -138,7 +153,7 @@
    (make-tank (clamp (+ (get-tank-x state) (get-tank-vel state)) TANK-R) (get-tank-vel state))
    (if (aim? state) #false (make-posn (get-missile-x state) (- (get-missile-y state) MISSILE-VEL)))))
 
-; State KeyEvent -> State
+; SiState KeyEvent -> SiState
 ; controls the tank's movement direction and fires a missile on key press
 (define (si-control state key-event)
   (cond
@@ -156,7 +171,7 @@
                    (sistate-missile state))]
     [else state]))
 
-; State -> Boolean
+; SiState -> Boolean
 ; stops the game if the ufo has landed
 (define (si-game-over? state)
   (or (>= (get-ufo-y state) (rng-max UFO-YR))
@@ -166,12 +181,13 @@
 
 ; MAIN ================================================
 
-; State -> State
+; SiState -> SiState
 (define (run-si state)
   (big-bang state
             [to-draw si-render]
             [on-tick si-move]
             [on-key si-control]
-            [stop-when si-game-over? si-render-final]))
+            [stop-when si-game-over? si-render-final]
+            [check-with deep-si-state?]))
 
 (run-si (make-sistate (make-posn (/ SCENE-W 2) (rng-min UFO-YR)) (make-tank 30 2) #false))

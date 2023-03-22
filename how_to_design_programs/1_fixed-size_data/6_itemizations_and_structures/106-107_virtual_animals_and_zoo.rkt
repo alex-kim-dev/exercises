@@ -49,6 +49,14 @@
 ; VAnimal is one of: VCat, VCham
 ; represents a virtual pet
 
+; Any -> Boolean
+; checks if arg a VAnimal
+(define (vanimal? arg)
+  (cond
+    [(vcat? arg) #true]
+    [(vcham? arg) #true]
+    [else #false]))
+
 ; VCat -> Image
 ; draws the cat on the scene at position x, and its happiness level
 (define (renderCat vcat)
@@ -144,15 +152,17 @@
      (big-bang (make-vcat position HAP-MAX 1)
                [to-draw renderCat]
                [on-tick updateCat]
-               [on-key handleKeyCat])]
+               [on-key handleKeyCat]
+               [check-with vcat?])]
     [(string=? animal "chameleon")
      (big-bang (make-vcham position HAP-MAX "red")
                [to-draw renderCham]
                [on-tick updateCham]
-               [on-key handleKeyCham])]))
+               [on-key handleKeyCham]
+               [check-with vcham?])]))
 
-; (cat-cham "cat" 50)
-; (cat-cham "chameleon" 50)
+(cat-cham "cat" 50)
+(cat-cham "chameleon" 50)
 
 ; ======================================================================
 
@@ -186,6 +196,6 @@
     [else zoo]))
 
 (define (cham-and-cat zoo)
-  (big-bang zoo [to-draw render] [on-tick update] [on-key handleKey]))
+  (big-bang zoo [to-draw render] [on-tick update] [on-key handleKey] [check-with zoo?]))
 
 (cham-and-cat (make-zoo (make-vcat 20 HAP-MAX 1) (make-vcham 50 HAP-MAX "red") 0))

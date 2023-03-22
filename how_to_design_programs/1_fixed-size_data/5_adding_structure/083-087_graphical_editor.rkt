@@ -110,7 +110,7 @@
 ; String -> Editor
 ; launches an interactive text editor
 (define (run initialText)
-  (big-bang (make-editor initialText "") [to-draw render] [on-key edit]))
+  (big-bang (make-editor initialText "") [to-draw render] [on-key edit] [check-with editor?]))
 
 (run "hello")
 
@@ -139,7 +139,8 @@
 (define (delete-prev-char-2 editor)
   (make-editor2 (if (string=? (editor2-str editor) "")
                     ""
-                    (substring (editor2-str editor) 0 (- (editor2-i editor) 1)))
+                    (string-append (substring (editor2-str editor) 0 (- (editor2-i editor) 1))
+                                   (editor2-post editor)))
                 (if (= (editor2-i editor) 0) 0 (- (editor2-i editor) 1))))
 
 (define (move-cursor-2 editor direction)
@@ -165,6 +166,9 @@
     [else editor]))
 
 (define (run2 initialText)
-  (big-bang (make-editor2 initialText (string-length initialText)) [to-draw render2] [on-key edit2]))
+  (big-bang (make-editor2 initialText (string-length initialText))
+            [to-draw render2]
+            [on-key edit2]
+            [check-with editor2?]))
 
 (run2 "hello")
